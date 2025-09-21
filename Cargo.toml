@@ -2,5 +2,9 @@
 name = "maml"
 version = "0.0.0"
 edition = "2024"
+description = "MAML - Minimal Abstract Markup Language"
+repository = "https://github.com/maml-dev/maml-rs"
+license-file = "LICENSE"
+readme = "README.md"
 
 [dependencies]
