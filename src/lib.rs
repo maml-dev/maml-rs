@@ -1,5 +1,6 @@
 use ariadne::{Color, Label, Report, ReportKind, Source};
 use chumsky::prelude::*;
+use logos::Logos;
 use std::collections::HashMap;
 
 /// MAML AST
@@ -16,174 +17,253 @@ pub enum MamlValue {
     Object(HashMap<String, MamlValue>),
 }
 
+/// Tokens for MAML
+#[derive(Logos, Debug, Clone, PartialEq)]
+#[logos(skip r"[ \t]+")]
+enum Token {
+    #[token("null")]
+    Null,
+
+    #[token("true")]
+    True,
+
+    #[token("false")]
+    False,
+
+    // Float MUST come before Int to ensure proper decimal matching, so priority three
+    #[regex(r"-?(?:0|[1-9][0-9]*)\.[0-9]+(?:[eE][+-]?[0-9]+)?", |lex| lex.slice().parse::<f64>().ok(), priority = 3)]
+    #[regex(r"-?(?:0|[1-9][0-9]*)[eE][+-]?[0-9]+", |lex| lex.slice().parse::<f64>().ok(), priority = 3)]
+    Float(f64),
+
+    #[regex(r"-?(?:0|[1-9][0-9]*)", |lex| lex.slice().parse::<i64>().ok(), priority = 2)]
+    Int(i64),
+
+    #[regex(r#""(?:[^"\\]|\\["\\/bfnrt]|\\u\{[0-9a-fA-F]{1,6}\})*""#, |lex| {
+        let s = lex.slice();
+        parse_string(&s[1..s.len()-1])
+    })]
+    String(String),
+
+    // Surrounded by triple quotes
+    #[regex(r#""""([^"]|"[^"]|""[^"])*""""#, |lex| {
+        let s = lex.slice();
+        let content = &s[3..s.len()-3];
+
+        // Make sure triple quotes are checked
+        if content.contains(r#"""""#) {
+            return None;
+        }
+
+        Some(content.strip_prefix('\n')
+            .or_else(|| content.strip_prefix("\r\n"))
+            .unwrap_or(content)
+            .to_string())
+    })]
+    RawString(String),
+
+    // An object key
+    #[regex(r"[a-zA-Z_-][a-zA-Z0-9_-]*", |lex| lex.slice().to_string(), priority = 1)]
+    #[regex(r"[0-9]+", |lex| lex.slice().to_string(), priority = 1)]
+    Key(String),
+
+    #[token("[")]
+    LBracket,
+
+    #[token("]")]
+    RBracket,
+
+    #[token("{")]
+    LBrace,
+
+    #[token("}")]
+    RBrace,
+
+    #[token(":")]
+    Colon,
+
+    #[token(",")]
+    Comma,
+
+    #[token("\n")]
+    Newline,
+
+    // Anything that comes after a #
+    #[regex(r"#[^\n]*", logos::skip)]
+    Comment,
+}
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Token::Null => write!(f, "null"),
+            Token::True => write!(f, "true"),
+            Token::False => write!(f, "false"),
+            Token::Float(n) => write!(f, "{}", n),
+            Token::Int(n) => write!(f, "{}", n),
+            Token::String(s) => write!(f, "\"{}\"", s),
+            Token::RawString(s) => write!(f, "\"\"\"{}\"\"\"", s),
+            Token::Key(s) => write!(f, "{}", s),
+            Token::LBracket => write!(f, "["),
+            Token::RBracket => write!(f, "]"),
+            Token::LBrace => write!(f, "{{"),
+            Token::RBrace => write!(f, "}}"),
+            Token::Colon => write!(f, ":"),
+            Token::Comma => write!(f, ","),
+            Token::Newline => write!(f, "\\n"),
+            Token::Comment => write!(f, "#comment"),
+        }
+    }
+}
+
+// Helper function to parse escape sequences in strings
+fn parse_string(s: &str) -> Option<String> {
+    let mut result = String::new();
+    let mut chars = s.chars();
+
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            match chars.next()? {
+                '\\' => result.push('\\'),
+                '/' => result.push('/'),
+                '"' => result.push('"'),
+                'b' => result.push('\x08'),
+                'f' => result.push('\x0C'),
+                'n' => result.push('\n'),
+                'r' => result.push('\r'),
+                't' => result.push('\t'),
+                'u' => {
+                    // Expect {XXXXXX}
+                    if chars.next()? != '{' {
+                        return None;
+                    }
+                    let mut hex = String::new();
+                    loop {
+                        match chars.next()? {
+                            '}' => break,
+                            c if c.is_ascii_hexdigit() && hex.len() < 6 => hex.push(c),
+                            _ => return None,
+                        }
+                    }
+                    let code = u32::from_str_radix(&hex, 16).ok()?;
+                    result.push(char::from_u32(code)?);
+                }
+                _ => return None,
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+
+    Some(result)
+}
+
 /// Parser definition
-fn parser<'a>() -> impl Parser<'a, &'a str, MamlValue, extra::Err<Rich<'a, char>>> {
+fn parser<'src>() -> impl Parser<'src, &'src [Token], MamlValue, extra::Err<Rich<'src, Token>>> {
     recursive(|value| {
-        // Comments
-        let comment = just('#')
-            .then(any().and_is(text::newline().not()).repeated())
-            .ignored();
+        // Separator: comma or newline
+        let separator = choice((just(Token::Comma).ignored(), just(Token::Newline).ignored()));
 
-        // Whitespace (not including newlines)
-        let ws = one_of(" \t").ignored().repeated();
-
-        // Separator: comma, newline, or comment+newline
-        // All branches must return () so we use .ignored()
-        let separator = choice((
-            just(',').ignored(),
-            text::newline().ignored(),
-            comment.then(text::newline().or_not()).ignored(),
+        // The number types
+        let number = choice((
+            select! { Token::Float(f) => MamlValue::Float(f) },
+            select! { Token::Int(i) => MamlValue::Int(i) },
         ))
-        .padded_by(ws);
+        .labelled("number");
 
-        // --- Numbers ---
-        let digits = text::digits(10);
-        let integer_part = choice((
-            just('0').to_slice(),
-            one_of("123456789").then(digits.or_not()).to_slice(),
+        // Strings, raw or typical
+        let string_val = choice((
+            select! { Token::RawString(s) => MamlValue::String(s) },
+            select! { Token::String(s) => MamlValue::String(s) },
         ));
 
-        let fraction = just('.').then(digits);
-        let exponent = one_of("eE").then(one_of("+-").or_not()).then(digits);
+        // Handling object keys
+        let key = choice((
+            select! { Token::String(s) => s },
+            select! { Token::Key(s) => s },
+        ));
 
-        let number = just('-')
-            .or_not()
-            .then(integer_part)
-            .then(fraction.or_not())
-            .then(exponent.or_not())
-            .to_slice()
-            .try_map(|s: &str, span| {
-                if s.contains(['.', 'e', 'E']) {
-                    s.parse::<f64>()
-                        .map(MamlValue::Float)
-                        .map_err(|_| Rich::custom(span, "Invalid float"))
-                } else {
-                    s.parse::<i64>()
-                        .map(MamlValue::Int)
-                        .map_err(|_| Rich::custom(span, "Integer overflow (must fit in 64-bit)"))
-                }
-            })
-            .labelled("number");
-
-        // --- Strings ---
-        let escape = just('\\').ignore_then(choice((
-            just('\\'),
-            just('/'),
-            just('"'),
-            just('b').to('\x08'),
-            just('f').to('\x0C'),
-            just('n').to('\n'),
-            just('r').to('\r'),
-            just('t').to('\t'),
-            just('u').ignore_then(
-                text::digits(16)
-                    .at_least(1)
-                    .at_most(6)
-                    .to_slice()
-                    .delimited_by(just('{'), just('}'))
-                    .try_map(|digits: &str, span| {
-                        let code = u32::from_str_radix(digits, 16).unwrap();
-                        char::from_u32(code).ok_or_else(|| {
-                            Rich::custom(span, format!("Invalid unicode codepoint: U+{:X}", code))
-                        })
-                    }),
-            ),
-        )));
-
-        let string_content = none_of("\\\"").or(escape).repeated().collect::<String>();
-        let simple_string = string_content
-            .delimited_by(just('"'), just('"'))
-            .labelled("string");
-
-        // Raw string: """..."""
-        let raw_string = just("\"\"\"")
-            .ignore_then(
-                any()
-                    .and_is(just("\"\"\"").not())
-                    .repeated()
-                    .collect::<String>(),
-            )
-            .then_ignore(just("\"\"\""))
-            .map(|s: String| {
-                // Strip leading newline if present
-                s.strip_prefix('\n')
-                    .or_else(|| s.strip_prefix("\r\n"))
-                    .unwrap_or(&s)
-                    .to_string()
-            })
-            .labelled("raw string");
-
-        let string_val = choice((raw_string, simple_string)).map(MamlValue::String);
-
-        // --- Keys ---
-        let identifier = one_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
-            .repeated()
-            .at_least(1)
-            .collect::<String>();
-
-        let key = choice((simple_string.clone(), identifier)).padded_by(ws);
-
-        // --- Array ---
         let array = value
             .clone()
             .separated_by(separator.clone().repeated().at_least(1))
             .allow_trailing()
             .collect()
-            .padded()
-            .delimited_by(just('['), just(']'))
+            .padded_by(just(Token::Newline).repeated())
+            .delimited_by(just(Token::LBracket), just(Token::RBracket))
             .map(MamlValue::Array)
             .labelled("array")
             .recover_with(via_parser(nested_delimiters(
-                '[',
-                ']',
-                [('[', ']'), ('{', '}')],
+                Token::LBracket,
+                Token::RBracket,
+                [
+                    (Token::LBracket, Token::RBracket),
+                    (Token::LBrace, Token::RBrace),
+                ],
                 |_| MamlValue::Array(vec![]),
             )));
 
-        // --- Object ---
-        let member = key.then_ignore(just(':').padded_by(ws)).then(value.clone());
+        // Object parsing
+        let member = key.then_ignore(just(Token::Colon)).then(value.clone());
 
         let object = member
             .separated_by(separator.repeated().at_least(1))
             .allow_trailing()
             .collect()
-            .padded()
-            .delimited_by(just('{'), just('}'))
+            .padded_by(just(Token::Newline).repeated())
+            .delimited_by(just(Token::LBrace), just(Token::RBrace))
             .map(MamlValue::Object)
             .labelled("object")
             .recover_with(via_parser(nested_delimiters(
-                '{',
-                '}',
-                [('[', ']'), ('{', '}')],
+                Token::LBrace,
+                Token::RBrace,
+                [
+                    (Token::LBracket, Token::RBracket),
+                    (Token::LBrace, Token::RBrace),
+                ],
                 |_| MamlValue::Object(HashMap::new()),
             )));
 
-        // --- Top-level choice ---
+        // Entry point/top-level choice
         choice((
-            just("null").to(MamlValue::Null),
-            just("true").to(MamlValue::Bool(true)),
-            just("false").to(MamlValue::Bool(false)),
+            just(Token::Null).to(MamlValue::Null),
+            just(Token::True).to(MamlValue::Bool(true)),
+            just(Token::False).to(MamlValue::Bool(false)),
             number,
             string_val,
             array,
             object,
         ))
-        .padded_by(ws)
     })
 }
 
 /// Parse from string (like `serde_json::from_str`)
 pub fn from_str(input: &str) -> Result<MamlValue, String> {
-    let (val, errs) = parser().padded().parse(input).into_output_errors();
+    // Tokenize
+    let lexer = Token::lexer(input);
+    let mut tokens = vec![];
+
+    for (token_result, span) in lexer.spanned() {
+        match token_result {
+            Ok(token) => tokens.push(token),
+            Err(_) => {
+                return Err(format!("Lexer error at {:?}", span));
+            }
+        }
+    }
+
+    // Parse
+    let (val, errs) = parser()
+        .padded_by(just(Token::Newline).repeated())
+        .parse(&tokens)
+        .into_output_errors();
 
     if !errs.is_empty() {
         let mut buffer = Vec::new();
         for e in errs {
             Report::build(ReportKind::Error, ("<input>", e.span().into_range()))
-                .with_message(e.to_string())
+                .with_message(format!("{:?}", e))
                 .with_label(
                     Label::new(("<input>", e.span().into_range()))
-                        .with_message(e.reason().to_string())
+                        .with_message(format!("{:?}", e.reason()))
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -198,7 +278,25 @@ pub fn from_str(input: &str) -> Result<MamlValue, String> {
 
 /// Parse with detailed error reporting to stderr
 pub fn parse_with_report(filename: &str, input: &str) -> Option<MamlValue> {
-    let (val, errs) = parser().padded().parse(input).into_output_errors();
+    // Tokenize
+    let lexer = Token::lexer(input);
+    let mut tokens = vec![];
+
+    for (token_result, span) in lexer.spanned() {
+        match token_result {
+            Ok(token) => tokens.push(token),
+            Err(_) => {
+                eprintln!("Lexer error at {:?}", span);
+                return None;
+            }
+        }
+    }
+
+    // Parse
+    let (val, errs) = parser()
+        .padded_by(just(Token::Newline).repeated())
+        .parse(&tokens)
+        .into_output_errors();
 
     if errs.is_empty() {
         return val;
@@ -213,16 +311,6 @@ pub fn parse_with_report(filename: &str, input: &str) -> Option<MamlValue> {
                     .with_message(e.reason().to_string())
                     .with_color(Color::Red),
             )
-            .with_note(format!(
-                "Error at line {} column {}",
-                input[..span.start].lines().count(),
-                input[..span.start]
-                    .lines()
-                    .last()
-                    .map(|l| l.len())
-                    .unwrap_or(0)
-                    + 1
-            ))
             .finish()
             .eprint((filename, Source::from(input)))
             .unwrap();
