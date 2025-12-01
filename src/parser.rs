@@ -85,7 +85,7 @@ pub fn parser<'src>() -> impl Parser<'src, &'src [Token], MamlValue, extra::Err<
     })
 }
 
-/// Parse from string (like `serde_json::from_str`)
+/// Parse from string
 pub fn from_str(input: &str) -> Result<MamlValue, String> {
     // Tokenize
     let lexer = Token::lexer(input);
