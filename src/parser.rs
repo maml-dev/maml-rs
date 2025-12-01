@@ -168,3 +168,59 @@ pub fn parse_with_report(filename: &str, input: &str) -> Option<MamlValue> {
 
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::parser::from_str;
+
+    use super::*;
+
+    #[test]
+    fn test_object() {
+        let val = from_str(
+            r#"
+            {
+              project: "MAML"
+              tags: [
+                "minimal"
+                "readable"
+              ]
+
+              # A simple nested object
+              spec: {
+                version: 1
+                author: "Anton Medvedev"
+              }
+
+              # Array of objects with nested objects
+              examples: [
+                {
+                  json: {
+                    name: "JSON"
+                    born: 2001
+                  }
+                }
+                {
+                  maml: {
+                    name: "MAML"
+                    born: 2025
+                  }
+                }
+              ]
+
+              notes: """
+            This is a multiline strings.
+            Keeps formatting as-is.
+            """
+            }
+        "#,
+        )
+        .unwrap();
+        if let MamlValue::Object(obj) = val {
+            assert_eq!(obj.len(), 5);
+            assert!(obj.contains_key("notes"));
+        } else {
+            panic!("Expected object");
+        }
+    }
+}
