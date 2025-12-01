@@ -69,7 +69,7 @@ pub enum Token {
     #[token(",")]
     Comma,
 
-    #[token("\n")]
+    #[regex(r"\r?\n")]
     Newline,
 
     // Anything that comes after a #
