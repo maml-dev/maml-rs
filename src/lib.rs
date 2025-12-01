@@ -174,7 +174,7 @@ fn parser<'a>() -> impl Parser<'a, &'a str, MamlValue, extra::Err<Rich<'a, char>
 
 /// Parse from string (like `serde_json::from_str`)
 pub fn from_str(input: &str) -> Result<MamlValue, String> {
-    let (val, errs) = parser().parse(input).into_output_errors();
+    let (val, errs) = parser().padded().parse(input).into_output_errors();
 
     if !errs.is_empty() {
         let mut buffer = Vec::new();
@@ -198,7 +198,7 @@ pub fn from_str(input: &str) -> Result<MamlValue, String> {
 
 /// Parse with detailed error reporting to stderr
 pub fn parse_with_report(filename: &str, input: &str) -> Option<MamlValue> {
-    let (val, errs) = parser().parse(input).into_output_errors();
+    let (val, errs) = parser().padded().parse(input).into_output_errors();
 
     if errs.is_empty() {
         return val;
