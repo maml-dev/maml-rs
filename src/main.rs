@@ -1,6 +1,8 @@
 use std::env;
 use std::fs;
 
+use maml::parser::parse_with_report;
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
@@ -17,7 +19,7 @@ fn main() {
         }
     };
 
-    match maml::parse_with_report(filename, &src) {
+    match parse_with_report(filename, &src) {
         Some(value) => {
             println!("{:#?}", value);
 
