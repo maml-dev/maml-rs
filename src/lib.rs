@@ -168,7 +168,7 @@ fn parser<'a>() -> impl Parser<'a, &'a str, MamlValue, extra::Err<Rich<'a, char>
             array,
             object,
         ))
-        .padded()
+        .padded_by(ws)
     })
 }
 
