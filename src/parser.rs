@@ -6,7 +6,7 @@ use logos::Logos;
 
 use crate::{MamlValue, tokenizer::Token};
 
-/// Parser definition
+/// Raw parser entrypoint
 pub fn parser<'src>() -> impl Parser<'src, &'src [Token], MamlValue, extra::Err<Rich<'src, Token>>>
 {
     recursive(|value| {

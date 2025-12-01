@@ -32,7 +32,7 @@ pub enum Token {
     // Surrounded by triple quotes
     #[regex(r#""""([^"]|"[^"]|""[^"])*""""#, |lex| {
         let s = lex.slice();
-        let content = &s[3..s.len()-3];
+        let content = &s[3..s.len()-3]; // The content within the triple quotes (which take up three chars each)
 
         // Make sure triple quotes are checked
         if content.contains(r#"""""#) {
