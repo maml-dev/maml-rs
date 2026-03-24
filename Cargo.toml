@@ -1,10 +1,17 @@
 [package]
 name = "maml"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2024"
-description = "MAML - Minimal Abstract Markup Language"
+description = "A parser and serializer for MAML (Minimal Abstract Markup Language)"
 repository = "https://github.com/maml-dev/maml-rs"
-license-file = "LICENSE"
+homepage = "https://maml.dev"
+documentation = "https://docs.rs/maml"
+license = "MIT"
 readme = "README.md"
+keywords = ["maml", "parser", "serializer", "config", "markup"]
+categories = ["config", "encoding", "parser-implementations"]
 
 [dependencies]
+
+[dev-dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }
