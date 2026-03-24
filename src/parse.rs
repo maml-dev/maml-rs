@@ -133,9 +133,8 @@ impl<'a> Parser<'a> {
                     }
                     let code_point = u32::from_str_radix(&hex, 16).unwrap();
                     if code_point > 0x10FFFF {
-                        return Err(self.error_snippet(Some(
-                            "Invalid escape sequence (out of range)".into(),
-                        )));
+                        return Err(self
+                            .error_snippet(Some("Invalid escape sequence (out of range)".into())));
                     }
                     match char::from_u32(code_point) {
                         Some(c) => s.push(c),
@@ -210,9 +209,7 @@ impl<'a> Parser<'a> {
                 self.next();
                 self.next();
                 if s.is_empty() && !has_leading_newline {
-                    return Err(
-                        self.error_snippet(Some("Raw strings cannot be empty".into()))
-                    );
+                    return Err(self.error_snippet(Some("Raw strings cannot be empty".into())));
                 }
                 return Ok(Some(Value::String(s)));
             }
@@ -332,10 +329,7 @@ impl<'a> Parser<'a> {
 
             if !seen_keys.insert(key.clone()) {
                 self.pos = key_pos;
-                return Err(self.error_snippet(Some(format!(
-                    "Duplicate key {:?}",
-                    key
-                ))));
+                return Err(self.error_snippet(Some(format!("Duplicate key {:?}", key))));
             }
 
             self.skip_whitespace();
@@ -418,9 +412,9 @@ impl<'a> Parser<'a> {
             } else if newline_after_value {
                 continue;
             } else {
-                return Err(self.error_snippet(Some(
-                    "Expected comma or newline between values".into(),
-                )));
+                return Err(
+                    self.error_snippet(Some("Expected comma or newline between values".into()))
+                );
             }
         }
     }

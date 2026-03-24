@@ -1,4 +1,4 @@
-use maml::{parse, stringify, Value};
+use maml::{Value, parse, stringify};
 
 fn load_test_cases(filename: &str) -> Vec<(String, String, String)> {
     let path = format!("tests/fixtures/{filename}");
@@ -43,12 +43,12 @@ fn json_to_value(json: &serde_json::Value) -> Value {
             }
         }
         serde_json::Value::String(s) => Value::String(s.clone()),
-        serde_json::Value::Array(arr) => {
-            Value::Array(arr.iter().map(json_to_value).collect())
-        }
-        serde_json::Value::Object(obj) => {
-            Value::Object(obj.iter().map(|(k, v)| (k.clone(), json_to_value(v))).collect())
-        }
+        serde_json::Value::Array(arr) => Value::Array(arr.iter().map(json_to_value).collect()),
+        serde_json::Value::Object(obj) => Value::Object(
+            obj.iter()
+                .map(|(k, v)| (k.clone(), json_to_value(v)))
+                .collect(),
+        ),
     }
 }
 
@@ -105,10 +105,7 @@ fn raw_string_crlf() {
 #[test]
 fn raw_string_mixed_crlf_lf() {
     let result = parse("\"\"\"line1\r\nline2\nline3\r\n\"\"\"").unwrap();
-    assert_eq!(
-        result,
-        Value::String("line1\r\nline2\nline3\r\n".into())
-    );
+    assert_eq!(result, Value::String("line1\r\nline2\nline3\r\n".into()));
 }
 
 #[test]
@@ -161,7 +158,11 @@ fn stringify_roundtrip() {
         // Compare numerically when types differ.
         match (&parsed, &reparsed) {
             (Value::Float(a), Value::Float(b)) => {
-                assert_eq!(a.to_bits(), b.to_bits(), "Roundtrip float mismatch for '{name}'");
+                assert_eq!(
+                    a.to_bits(),
+                    b.to_bits(),
+                    "Roundtrip float mismatch for '{name}'"
+                );
             }
             (Value::Float(a), Value::Int(b)) => {
                 assert_eq!(*a, *b as f64, "Roundtrip numeric mismatch for '{name}'");
@@ -183,10 +184,7 @@ fn stringify_basic() {
     assert_eq!(stringify(&Value::Float(-0.0)), "-0");
     assert_eq!(stringify(&Value::String("hello".into())), "\"hello\"");
     assert_eq!(stringify(&Value::Array(vec![])), "[]");
-    assert_eq!(
-        stringify(&Value::Object(vec![])),
-        "{}"
-    );
+    assert_eq!(stringify(&Value::Object(vec![])), "{}");
 }
 
 #[test]
@@ -206,22 +204,14 @@ fn stringify_object() {
 
 #[test]
 fn stringify_quoted_keys() {
-    let val = Value::Object(vec![
-        ("foo bar".into(), Value::String("value".into())),
-    ]);
-    assert_eq!(
-        stringify(&val),
-        "{\n  \"foo bar\": \"value\"\n}"
-    );
+    let val = Value::Object(vec![("foo bar".into(), Value::String("value".into()))]);
+    assert_eq!(stringify(&val), "{\n  \"foo bar\": \"value\"\n}");
 }
 
 #[test]
 fn stringify_escapes() {
     let val = Value::String("line1\nline2\ttab\\back\"quote".into());
-    assert_eq!(
-        stringify(&val),
-        "\"line1\\nline2\\ttab\\\\back\\\"quote\""
-    );
+    assert_eq!(stringify(&val), "\"line1\\nline2\\ttab\\\\back\\\"quote\"");
 }
 
 #[test]

@@ -69,9 +69,9 @@ fn do_stringify(value: &Value, level: usize) -> String {
 
 fn is_identifier_key(key: &str) -> bool {
     !key.is_empty()
-        && key.bytes().all(|b| {
-            b.is_ascii_alphanumeric() || b == b'_' || b == b'-'
-        })
+        && key
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
 }
 
 fn stringify_key(key: &str) -> String {
