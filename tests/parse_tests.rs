@@ -315,3 +315,24 @@ fn backslash_at_eof_no_trailing_newline() {
     let err = parse("\"abc\\").unwrap_err();
     assert!(err.to_string().contains("Unexpected end of input"));
 }
+
+#[test]
+fn string_rejects_control_char_u001f() {
+    // U+001F (Unit Separator) must be escaped per spec
+    let input = "\"hello\x1Fworld\"";
+    assert!(parse(input).is_err());
+}
+
+#[test]
+fn string_rejects_del_u007f() {
+    // U+007F (DEL) must be escaped per spec
+    let input = "\"hello\x7Fworld\"";
+    assert!(parse(input).is_err());
+}
+
+#[test]
+fn string_allows_tab() {
+    // Tab (U+0009) is allowed unescaped in strings
+    let result = parse("\"hello\tworld\"").unwrap();
+    assert_eq!(result, Value::String("hello\tworld".into()));
+}

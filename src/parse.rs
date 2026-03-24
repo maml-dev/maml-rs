@@ -160,7 +160,11 @@ impl<'a> Parser<'a> {
                 escaped = true;
             } else if self.ch == b'"' {
                 break;
-            } else if self.ch == b'\n' || self.done || (self.ch < 0x1F && self.ch != b'\t') {
+            } else if self.ch == b'\n'
+                || self.done
+                || (self.ch < 0x20 && self.ch != b'\t')
+                || self.ch == 0x7F
+            {
                 return Err(self.error_snippet(None));
             } else {
                 // Multi-byte UTF-8: copy full character
