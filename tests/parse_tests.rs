@@ -58,12 +58,6 @@ fn parse_test_cases() {
     assert!(!cases.is_empty(), "no test cases loaded");
 
     for (name, input, expected_json) in &cases {
-        // This test uses surrogate code points (\u{D83D}\u{DE80}) which are not valid
-        // Unicode scalar values per the MAML spec. JS String.fromCodePoint also rejects them.
-        if name == "object with unicode and escapes mixed" {
-            continue;
-        }
-
         let parsed = parse(input).unwrap_or_else(|e| {
             panic!("Failed to parse '{name}':\n{e}\nInput: {input:?}");
         });
@@ -215,10 +209,21 @@ fn stringify_escapes() {
 }
 
 #[test]
+fn unicode_scalar_value_boundaries() {
+    assert_eq!(parse("\"\\u{0}\"").unwrap(), Value::String("\u{0000}".into()));
+    assert_eq!(parse("\"\\u{D7FF}\"").unwrap(), Value::String("\u{D7FF}".into()));
+    assert_eq!(parse("\"\\u{E000}\"").unwrap(), Value::String("\u{E000}".into()));
+    assert_eq!(parse("\"\\u{FFFF}\"").unwrap(), Value::String("\u{FFFF}".into()));
+    assert_eq!(parse("\"\\u{10000}\"").unwrap(), Value::String("\u{10000}".into()));
+    assert_eq!(parse("\"\\u{10FFFF}\"").unwrap(), Value::String("\u{10FFFF}".into()));
+}
+
+#[test]
 fn surrogate_codepoints_rejected() {
     assert!(parse("\"\\u{D800}\"").is_err());
+    assert!(parse("\"\\u{DBFF}\"").is_err());
+    assert!(parse("\"\\u{DC00}\"").is_err());
     assert!(parse("\"\\u{DFFF}\"").is_err());
-    assert!(parse("\"\\u{D83D}\"").is_err());
 }
 
 #[test]
@@ -317,22 +322,50 @@ fn backslash_at_eof_no_trailing_newline() {
 }
 
 #[test]
-fn string_rejects_control_char_u001f() {
-    // U+001F (Unit Separator) must be escaped per spec
-    let input = "\"hello\x1Fworld\"";
-    assert!(parse(input).is_err());
+fn all_control_chars_below_u0020_rejected_except_tab() {
+    for code in 0u8..0x20 {
+        if code == 0x09 { continue; } // tab is allowed
+        let input = format!("\"{ch}\"", ch = char::from(code));
+        assert!(
+            parse(&input).is_err(),
+            "Expected error for control character 0x{code:02X}"
+        );
+    }
 }
 
 #[test]
 fn string_rejects_del_u007f() {
-    // U+007F (DEL) must be escaped per spec
     let input = "\"hello\x7Fworld\"";
     assert!(parse(input).is_err());
 }
 
 #[test]
 fn string_allows_tab() {
-    // Tab (U+0009) is allowed unescaped in strings
     let result = parse("\"hello\tworld\"").unwrap();
     assert_eq!(result, Value::String("hello\tworld".into()));
+}
+
+#[test]
+fn stringify_unicode_boundary_chars_pass_through() {
+    let d7ff = Value::String("\u{D7FF}".into());
+    assert_eq!(stringify(&d7ff), format!("\"\u{D7FF}\""));
+    let e000 = Value::String("\u{E000}".into());
+    assert_eq!(stringify(&e000), format!("\"\u{E000}\""));
+    let sup = Value::String("\u{10000}".into());
+    assert_eq!(stringify(&sup), format!("\"\u{10000}\""));
+    let max = Value::String("\u{10FFFF}".into());
+    assert_eq!(stringify(&max), format!("\"\u{10FFFF}\""));
+}
+
+#[test]
+fn stringify_control_chars_0x01_to_0x1f_except_tab_escaped() {
+    for code in 1u8..0x20 {
+        if code == 0x09 { continue; } // tab uses \t
+        if code == 0x0A { continue; } // newline uses \n
+        if code == 0x0D { continue; } // CR uses \r
+        let val = Value::String(String::from(char::from(code)));
+        let result = stringify(&val);
+        let expected = format!("\"\\u{{{:X}}}\"", code);
+        assert_eq!(result, expected, "Mismatch for control character 0x{code:02X}");
+    }
 }

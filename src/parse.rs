@@ -91,6 +91,10 @@ impl<'a> Parser<'a> {
         if self.ch != b'"' {
             return Ok(None);
         }
+        self.parse_string_body().map(Some)
+    }
+
+    fn parse_string_body(&mut self) -> Result<String, Error> {
         let mut s = String::new();
         let mut escaped = false;
         loop {
@@ -132,18 +136,12 @@ impl<'a> Parser<'a> {
                         return Err(self.error_snippet(Some("Invalid escape sequence".into())));
                     }
                     let code_point = u32::from_str_radix(&hex, 16).unwrap();
-                    if code_point > 0x10FFFF {
+                    if code_point > 0x10FFFF || (code_point >= 0xD800 && code_point <= 0xDFFF) {
                         return Err(self
                             .error_snippet(Some("Invalid escape sequence (out of range)".into())));
                     }
-                    match char::from_u32(code_point) {
-                        Some(c) => s.push(c),
-                        None => {
-                            return Err(self.error_snippet(Some(
-                                "Invalid escape sequence (out of range)".into(),
-                            )));
-                        }
-                    }
+                    // Code point is a valid Unicode scalar value; safe to unwrap.
+                    s.push(char::from_u32(code_point).unwrap());
                 } else {
                     match escape_char(self.ch) {
                         Some(c) => s.push(c),
@@ -182,7 +180,7 @@ impl<'a> Parser<'a> {
             }
         }
         self.next();
-        Ok(Some(s))
+        Ok(s)
     }
 
     fn parse_raw_string(&mut self) -> Result<Option<Value>, Error> {
@@ -318,8 +316,7 @@ impl<'a> Parser<'a> {
         loop {
             let key_pos = self.pos;
             let key = if self.ch == b'"' {
-                // ch is '"', so parse_string always returns Some or Err
-                self.parse_string()?.unwrap()
+                self.parse_string_body()?
             } else {
                 self.parse_key()?
             };
