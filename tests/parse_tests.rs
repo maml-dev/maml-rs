@@ -229,11 +229,89 @@ fn integer_overflow() {
 
 #[test]
 fn value_accessors() {
-    let obj = parse("{a: 1, b: [true, null]}").unwrap();
+    let obj = parse("{a: 1, b: [true, null], c: 3.14, d: \"hello\"}").unwrap();
+
+    // Index access
     assert_eq!(obj["a"], Value::Int(1));
     assert_eq!(obj["b"][0], Value::Bool(true));
     assert_eq!(obj["b"][1], Value::Null);
-    assert_eq!(obj.get("c"), None);
+
+    // get() on missing key
+    assert_eq!(obj.get("missing"), None);
+    // get() on non-object
+    assert_eq!(obj["a"].get("x"), None);
+
+    // is_null
+    assert!(obj["b"][1].is_null());
+    assert!(!obj["a"].is_null());
+
+    // as_bool
+    assert_eq!(obj["b"][0].as_bool(), Some(true));
+    assert_eq!(obj["a"].as_bool(), None);
+
+    // as_i64
+    assert_eq!(obj["a"].as_i64(), Some(1));
+    assert_eq!(obj["d"].as_i64(), None);
+
+    // as_f64
+    assert_eq!(obj["c"].as_f64(), Some(3.14));
+    assert_eq!(obj["a"].as_f64(), None);
+
+    // as_str
+    assert_eq!(obj["d"].as_str(), Some("hello"));
+    assert_eq!(obj["a"].as_str(), None);
+
+    // as_array
     assert!(obj["b"].as_array().is_some());
+    assert_eq!(obj["a"].as_array(), None);
+
+    // as_object
     assert!(obj.as_object().is_some());
+    assert_eq!(obj["a"].as_object(), None);
+}
+
+#[test]
+fn value_from_impls() {
+    let _: Value = true.into();
+    let _: Value = 42i64.into();
+    let _: Value = 3.14f64.into();
+    let _: Value = "hello".into();
+    let _: Value = String::from("world").into();
+    let _: Value = vec![Value::Null].into();
+}
+
+#[test]
+#[should_panic(expected = "not an array")]
+fn index_usize_on_non_array() {
+    let val = parse("42").unwrap();
+    let _ = &val[0];
+}
+
+#[test]
+#[should_panic(expected = "key not found")]
+fn index_str_on_missing_key() {
+    let val = parse("{a: 1}").unwrap();
+    let _ = &val["missing"];
+}
+
+#[test]
+fn error_line_number() {
+    let err = parse("{\n  a: 1\n  a: 2\n}").unwrap_err();
+    assert!(err.line() > 0);
+    let msg = err.to_string();
+    assert!(msg.contains("Duplicate key"));
+}
+
+#[test]
+fn unicode_escape_non_hex_first_char() {
+    // \u{g} — first char after { is not hex and not }
+    let err = parse("\"\\u{g}\"").unwrap_err();
+    assert!(err.to_string().contains("Invalid escape sequence"));
+}
+
+#[test]
+fn backslash_at_eof_no_trailing_newline() {
+    // Backslash at end of input with no trailing newline
+    let err = parse("\"abc\\").unwrap_err();
+    assert!(err.to_string().contains("Unexpected end of input"));
 }

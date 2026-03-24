@@ -167,15 +167,12 @@ impl<'a> Parser<'a> {
                 if self.ch < 0x80 {
                     s.push(self.ch as char);
                 } else {
-                    // Decode UTF-8 character from current position
+                    // Multi-byte UTF-8: source is valid &str, so chars().next() is guaranteed
                     let start = self.pos - 1;
-                    let remaining = &self.source[start..];
-                    if let Some(c) = remaining.chars().next() {
-                        s.push(c);
-                        // Skip the continuation bytes
-                        for _ in 1..c.len_utf8() {
-                            self.next();
-                        }
+                    let c = self.source[start..].chars().next().unwrap();
+                    s.push(c);
+                    for _ in 1..c.len_utf8() {
+                        self.next();
                     }
                 }
             }
@@ -217,13 +214,12 @@ impl<'a> Parser<'a> {
             if self.ch < 0x80 {
                 s.push(self.ch as char);
             } else {
+                // source is valid &str, so chars().next() is guaranteed
                 let start = self.pos - 1;
-                let remaining = &self.source[start..];
-                if let Some(c) = remaining.chars().next() {
-                    s.push(c);
-                    for _ in 1..c.len_utf8() {
-                        self.next();
-                    }
+                let c = self.source[start..].chars().next().unwrap();
+                s.push(c);
+                for _ in 1..c.len_utf8() {
+                    self.next();
                 }
             }
             self.next();
@@ -287,9 +283,8 @@ impl<'a> Parser<'a> {
         }
 
         if is_float {
-            let n: f64 = num_str
-                .parse()
-                .map_err(|_| self.error_snippet(Some(format!("Invalid number: {num_str}"))))?;
+            // Format is pre-validated, parse cannot fail
+            let n: f64 = num_str.parse().unwrap();
             Ok(Some(Value::Float(n)))
         } else if num_str == "-0" {
             Ok(Some(Value::Float(-0.0)))
@@ -319,10 +314,8 @@ impl<'a> Parser<'a> {
         loop {
             let key_pos = self.pos;
             let key = if self.ch == b'"' {
-                match self.parse_string()? {
-                    Some(s) => s,
-                    None => return Err(self.error_snippet(None)),
-                }
+                // ch is '"', so parse_string always returns Some or Err
+                self.parse_string()?.unwrap()
             } else {
                 self.parse_key()?
             };
@@ -462,24 +455,15 @@ impl<'a> Parser<'a> {
         false
     }
 
-    /// Get the full Unicode character at the current byte position (pos - 1).
-    fn current_char(&self) -> Option<char> {
-        if self.done || self.ch == 0 {
-            return None;
-        }
-        let byte_pos = self.pos - 1;
-        self.source[byte_pos..].chars().next()
-    }
-
     fn error_snippet(&self, message: Option<String>) -> Error {
         let message = if self.done {
             "Unexpected end of input".to_string()
         } else {
             message.unwrap_or_else(|| {
-                let ch_repr = match self.current_char() {
-                    Some(c) => format!("{:?}", c.to_string()),
-                    None => "\"\"".to_string(),
-                };
+                // !self.done guarantees pos >= 1 and source[pos-1..] is non-empty valid UTF-8
+                let byte_pos = self.pos - 1;
+                let c = self.source[byte_pos..].chars().next().unwrap();
+                let ch_repr = format!("{:?}", c.to_string());
                 format!("Unexpected character {ch_repr}")
             })
         };
