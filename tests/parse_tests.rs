@@ -210,12 +210,30 @@ fn stringify_escapes() {
 
 #[test]
 fn unicode_scalar_value_boundaries() {
-    assert_eq!(parse("\"\\u{0}\"").unwrap(), Value::String("\u{0000}".into()));
-    assert_eq!(parse("\"\\u{D7FF}\"").unwrap(), Value::String("\u{D7FF}".into()));
-    assert_eq!(parse("\"\\u{E000}\"").unwrap(), Value::String("\u{E000}".into()));
-    assert_eq!(parse("\"\\u{FFFF}\"").unwrap(), Value::String("\u{FFFF}".into()));
-    assert_eq!(parse("\"\\u{10000}\"").unwrap(), Value::String("\u{10000}".into()));
-    assert_eq!(parse("\"\\u{10FFFF}\"").unwrap(), Value::String("\u{10FFFF}".into()));
+    assert_eq!(
+        parse("\"\\u{0}\"").unwrap(),
+        Value::String("\u{0000}".into())
+    );
+    assert_eq!(
+        parse("\"\\u{D7FF}\"").unwrap(),
+        Value::String("\u{D7FF}".into())
+    );
+    assert_eq!(
+        parse("\"\\u{E000}\"").unwrap(),
+        Value::String("\u{E000}".into())
+    );
+    assert_eq!(
+        parse("\"\\u{FFFF}\"").unwrap(),
+        Value::String("\u{FFFF}".into())
+    );
+    assert_eq!(
+        parse("\"\\u{10000}\"").unwrap(),
+        Value::String("\u{10000}".into())
+    );
+    assert_eq!(
+        parse("\"\\u{10FFFF}\"").unwrap(),
+        Value::String("\u{10FFFF}".into())
+    );
 }
 
 #[test]
@@ -324,7 +342,9 @@ fn backslash_at_eof_no_trailing_newline() {
 #[test]
 fn all_control_chars_below_u0020_rejected_except_tab() {
     for code in 0u8..0x20 {
-        if code == 0x09 { continue; } // tab is allowed
+        if code == 0x09 {
+            continue;
+        } // tab is allowed
         let input = format!("\"{ch}\"", ch = char::from(code));
         assert!(
             parse(&input).is_err(),
@@ -360,12 +380,21 @@ fn stringify_unicode_boundary_chars_pass_through() {
 #[test]
 fn stringify_control_chars_0x01_to_0x1f_except_tab_escaped() {
     for code in 1u8..0x20 {
-        if code == 0x09 { continue; } // tab uses \t
-        if code == 0x0A { continue; } // newline uses \n
-        if code == 0x0D { continue; } // CR uses \r
+        if code == 0x09 {
+            continue;
+        } // tab uses \t
+        if code == 0x0A {
+            continue;
+        } // newline uses \n
+        if code == 0x0D {
+            continue;
+        } // CR uses \r
         let val = Value::String(String::from(char::from(code)));
         let result = stringify(&val);
         let expected = format!("\"\\u{{{:X}}}\"", code);
-        assert_eq!(result, expected, "Mismatch for control character 0x{code:02X}");
+        assert_eq!(
+            result, expected,
+            "Mismatch for control character 0x{code:02X}"
+        );
     }
 }

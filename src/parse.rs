@@ -136,7 +136,7 @@ impl<'a> Parser<'a> {
                         return Err(self.error_snippet(Some("Invalid escape sequence".into())));
                     }
                     let code_point = u32::from_str_radix(&hex, 16).unwrap();
-                    if code_point > 0x10FFFF || (code_point >= 0xD800 && code_point <= 0xDFFF) {
+                    if code_point > 0x10FFFF || (0xD800..=0xDFFF).contains(&code_point) {
                         return Err(self
                             .error_snippet(Some("Invalid escape sequence (out of range)".into())));
                     }
