@@ -298,6 +298,14 @@ fn ser_floats() {
 }
 
 #[test]
+fn ser_non_finite_float_error() {
+    assert!(to_string(&f64::NAN).is_err());
+    assert!(to_string(&f64::INFINITY).is_err());
+    assert!(to_string(&f64::NEG_INFINITY).is_err());
+    assert!(to_string(&f32::NAN).is_err());
+}
+
+#[test]
 fn ser_string() {
     assert_eq!(to_string(&"hello").unwrap(), "\"hello\"");
     assert_eq!(to_string(&"line\nnew").unwrap(), "\"line\\nnew\"");

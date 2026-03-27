@@ -387,6 +387,36 @@ fn stringify_unicode_boundary_chars_pass_through() {
 }
 
 #[test]
+fn stringify_non_finite_float_error() {
+    assert!(stringify(&Value::Float(f64::NAN)).is_err());
+    assert!(stringify(&Value::Float(f64::INFINITY)).is_err());
+    assert!(stringify(&Value::Float(f64::NEG_INFINITY)).is_err());
+}
+
+#[test]
+fn parse_crlf_whitespace() {
+    // CRLF between values in an array
+    let result = parse("[\r\n  1\r\n  2\r\n]").unwrap();
+    assert_eq!(result, Value::Array(vec![Value::Int(1), Value::Int(2)]));
+
+    // CRLF between key-value pairs in an object
+    let result = parse("{\r\n  a: 1\r\n  b: 2\r\n}").unwrap();
+    assert_eq!(
+        result,
+        Value::Object(vec![
+            ("a".into(), Value::Int(1)),
+            ("b".into(), Value::Int(2))
+        ])
+    );
+}
+
+#[test]
+fn parse_bare_cr_rejected() {
+    // Bare CR (not followed by LF) should not be treated as whitespace
+    assert!(parse("{\r a: 1}").is_err());
+}
+
+#[test]
 fn stringify_control_chars_0x01_to_0x1f_except_tab_escaped() {
     for code in 1u8..0x20 {
         if code == 0x09 {
