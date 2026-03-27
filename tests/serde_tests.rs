@@ -255,11 +255,7 @@ fn de_value_roundtrip_with_parse() {
         // Special float comparison for -0.0
         match (&parsed, &deserialized) {
             (Value::Float(a), Value::Float(b)) => {
-                assert_eq!(
-                    a.to_bits(),
-                    b.to_bits(),
-                    "Test '{name}' float mismatch"
-                );
+                assert_eq!(a.to_bits(), b.to_bits(), "Test '{name}' float mismatch");
             }
             _ => {
                 assert_eq!(parsed, deserialized, "Test '{name}' mismatch");
@@ -283,7 +279,10 @@ fn ser_integers() {
     assert_eq!(to_string(&42i8).unwrap(), "42");
     assert_eq!(to_string(&-100i16).unwrap(), "-100");
     assert_eq!(to_string(&0i32).unwrap(), "0");
-    assert_eq!(to_string(&9223372036854775807i64).unwrap(), "9223372036854775807");
+    assert_eq!(
+        to_string(&9223372036854775807i64).unwrap(),
+        "9223372036854775807"
+    );
     assert_eq!(to_string(&255u8).unwrap(), "255");
     assert_eq!(to_string(&1000u16).unwrap(), "1000");
     assert_eq!(to_string(&70000u32).unwrap(), "70000");
@@ -301,10 +300,7 @@ fn ser_floats() {
 #[test]
 fn ser_string() {
     assert_eq!(to_string(&"hello").unwrap(), "\"hello\"");
-    assert_eq!(
-        to_string(&"line\nnew").unwrap(),
-        "\"line\\nnew\""
-    );
+    assert_eq!(to_string(&"line\nnew").unwrap(), "\"line\\nnew\"");
 }
 
 #[test]
@@ -336,10 +332,7 @@ fn ser_unit_struct() {
 
 #[test]
 fn ser_vec() {
-    assert_eq!(
-        to_string(&vec![1, 2, 3]).unwrap(),
-        "[\n  1\n  2\n  3\n]"
-    );
+    assert_eq!(to_string(&vec![1, 2, 3]).unwrap(), "[\n  1\n  2\n  3\n]");
 }
 
 #[test]
@@ -457,18 +450,12 @@ fn ser_enum_struct_variant() {
         Move { x: i64, y: i64 },
     }
     let result = to_string(&Action::Move { x: 10, y: 20 }).unwrap();
-    assert_eq!(
-        result,
-        "{\n  Move: {\n    x: 10\n    y: 20\n  }\n}"
-    );
+    assert_eq!(result, "{\n  Move: {\n    x: 10\n    y: 20\n  }\n}");
 }
 
 #[test]
 fn ser_vec_u8() {
-    assert_eq!(
-        to_string(&vec![1u8, 2, 3]).unwrap(),
-        "[\n  1\n  2\n  3\n]"
-    );
+    assert_eq!(to_string(&vec![1u8, 2, 3]).unwrap(), "[\n  1\n  2\n  3\n]");
 }
 
 #[test]
@@ -561,11 +548,7 @@ fn ser_value_matches_stringify() {
     for value in &cases {
         let ser_result = to_string(value).unwrap();
         let stringify_result = stringify(value).unwrap();
-        assert_eq!(
-            ser_result, stringify_result,
-            "Mismatch for {:?}",
-            value
-        );
+        assert_eq!(ser_result, stringify_result, "Mismatch for {:?}", value);
     }
 }
 
@@ -795,7 +778,11 @@ fn ser_map_with_non_string_keys_integer() {
 
 #[test]
 fn ser_map_key_bool() {
-    let result = to_string(&MapWith { key: true, value: 1 }).unwrap();
+    let result = to_string(&MapWith {
+        key: true,
+        value: 1,
+    })
+    .unwrap();
     assert!(result.contains("true: 1"));
 }
 
@@ -807,19 +794,31 @@ fn ser_map_key_i8() {
 
 #[test]
 fn ser_map_key_i16() {
-    let result = to_string(&MapWith { key: 1i16, value: 1 }).unwrap();
+    let result = to_string(&MapWith {
+        key: 1i16,
+        value: 1,
+    })
+    .unwrap();
     assert!(result.contains("1: 1"));
 }
 
 #[test]
 fn ser_map_key_i32() {
-    let result = to_string(&MapWith { key: 1i32, value: 1 }).unwrap();
+    let result = to_string(&MapWith {
+        key: 1i32,
+        value: 1,
+    })
+    .unwrap();
     assert!(result.contains("1: 1"));
 }
 
 #[test]
 fn ser_map_key_i64() {
-    let result = to_string(&MapWith { key: 1i64, value: 1 }).unwrap();
+    let result = to_string(&MapWith {
+        key: 1i64,
+        value: 1,
+    })
+    .unwrap();
     assert!(result.contains("1: 1"));
 }
 
@@ -831,19 +830,31 @@ fn ser_map_key_u8() {
 
 #[test]
 fn ser_map_key_u16() {
-    let result = to_string(&MapWith { key: 1u16, value: 1 }).unwrap();
+    let result = to_string(&MapWith {
+        key: 1u16,
+        value: 1,
+    })
+    .unwrap();
     assert!(result.contains("1: 1"));
 }
 
 #[test]
 fn ser_map_key_u32() {
-    let result = to_string(&MapWith { key: 1u32, value: 1 }).unwrap();
+    let result = to_string(&MapWith {
+        key: 1u32,
+        value: 1,
+    })
+    .unwrap();
     assert!(result.contains("1: 1"));
 }
 
 #[test]
 fn ser_map_key_u64() {
-    let result = to_string(&MapWith { key: 1u64, value: 1 }).unwrap();
+    let result = to_string(&MapWith {
+        key: 1u64,
+        value: 1,
+    })
+    .unwrap();
     assert!(result.contains("1: 1"));
 }
 
@@ -859,7 +870,11 @@ fn ser_map_key_unit_variant() {
     enum K {
         A,
     }
-    let result = to_string(&MapWith { key: K::A, value: 1 }).unwrap();
+    let result = to_string(&MapWith {
+        key: K::A,
+        value: 1,
+    })
+    .unwrap();
     assert!(result.contains("A: 1"));
 }
 
@@ -869,12 +884,24 @@ fn ser_map_key_unit_variant() {
 
 #[test]
 fn ser_map_key_f32_error() {
-    assert!(to_string(&MapWith { key: 1.0f32, value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: 1.0f32,
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 #[test]
 fn ser_map_key_f64_error() {
-    assert!(to_string(&MapWith { key: 1.0f64, value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: 1.0f64,
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 struct BytesKey;
@@ -886,17 +913,35 @@ impl Serialize for BytesKey {
 
 #[test]
 fn ser_map_key_bytes_error() {
-    assert!(to_string(&MapWith { key: BytesKey, value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: BytesKey,
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 #[test]
 fn ser_map_key_none_error() {
-    assert!(to_string(&MapWith { key: None::<i64>, value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: None::<i64>,
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 #[test]
 fn ser_map_key_some_error() {
-    assert!(to_string(&MapWith { key: Some(42), value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: Some(42),
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 #[test]
@@ -915,7 +960,13 @@ fn ser_map_key_unit_struct_error() {
 fn ser_map_key_newtype_struct_error() {
     #[derive(Serialize)]
     struct N(i64);
-    assert!(to_string(&MapWith { key: N(1), value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: N(1),
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 #[test]
@@ -924,24 +975,48 @@ fn ser_map_key_newtype_variant_error() {
     enum E {
         A(i64),
     }
-    assert!(to_string(&MapWith { key: E::A(1), value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: E::A(1),
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 #[test]
 fn ser_map_key_seq_error() {
-    assert!(to_string(&MapWith { key: vec![1, 2], value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: vec![1, 2],
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 #[test]
 fn ser_map_key_tuple_error() {
-    assert!(to_string(&MapWith { key: (1, 2), value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: (1, 2),
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 #[test]
 fn ser_map_key_tuple_struct_error() {
     #[derive(Serialize)]
     struct T(i64, i64);
-    assert!(to_string(&MapWith { key: T(1, 2), value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: T(1, 2),
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 #[test]
@@ -950,7 +1025,13 @@ fn ser_map_key_tuple_variant_error() {
     enum E {
         A(i64, i64),
     }
-    assert!(to_string(&MapWith { key: E::A(1, 2), value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: E::A(1, 2),
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 struct MapKey;
@@ -964,7 +1045,13 @@ impl Serialize for MapKey {
 
 #[test]
 fn ser_map_key_map_error() {
-    assert!(to_string(&MapWith { key: MapKey, value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: MapKey,
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 struct StructKey;
@@ -978,7 +1065,13 @@ impl Serialize for StructKey {
 
 #[test]
 fn ser_map_key_struct_error() {
-    assert!(to_string(&MapWith { key: StructKey, value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: StructKey,
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 #[test]
@@ -987,7 +1080,13 @@ fn ser_map_key_struct_variant_error() {
     enum E {
         A { x: i64 },
     }
-    assert!(to_string(&MapWith { key: E::A { x: 1 }, value: 1 }).is_err());
+    assert!(
+        to_string(&MapWith {
+            key: E::A { x: 1 },
+            value: 1
+        })
+        .is_err()
+    );
 }
 
 // =========================================================================

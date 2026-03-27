@@ -210,9 +210,7 @@ mod serde_impl {
                 Value::Float(n) => serializer.serialize_f64(*n),
                 Value::String(s) => serializer.serialize_str(s),
                 Value::Array(a) => serializer.collect_seq(a),
-                Value::Object(pairs) => {
-                    serializer.collect_map(pairs.iter().map(|(k, v)| (k, v)))
-                }
+                Value::Object(pairs) => serializer.collect_map(pairs.iter().map(|(k, v)| (k, v))),
             }
         }
     }
@@ -341,9 +339,7 @@ mod serde_impl {
                         value: Some(value),
                     })
                 }
-                _ => Err(de::Error::custom(
-                    "expected a string or object for enum",
-                )),
+                _ => Err(de::Error::custom("expected a string or object for enum")),
             }
         }
 
@@ -452,10 +448,7 @@ mod serde_impl {
             }
         }
 
-        fn next_value_seed<V: DeserializeSeed<'de>>(
-            &mut self,
-            seed: V,
-        ) -> Result<V::Value, Error> {
+        fn next_value_seed<V: DeserializeSeed<'de>>(&mut self, seed: V) -> Result<V::Value, Error> {
             // unwrap: serde guarantees next_key_seed is called before next_value_seed
             seed.deserialize(self.value.take().unwrap())
         }
@@ -483,12 +476,7 @@ mod serde_impl {
             seed: V,
         ) -> Result<(V::Value, Self::Variant), Error> {
             let variant = seed.deserialize(Value::String(self.variant))?;
-            Ok((
-                variant,
-                VariantDeserializer {
-                    value: self.value,
-                },
-            ))
+            Ok((variant, VariantDeserializer { value: self.value }))
         }
     }
 
@@ -510,10 +498,7 @@ mod serde_impl {
             }
         }
 
-        fn newtype_variant_seed<T: DeserializeSeed<'de>>(
-            self,
-            seed: T,
-        ) -> Result<T::Value, Error> {
+        fn newtype_variant_seed<T: DeserializeSeed<'de>>(self, seed: T) -> Result<T::Value, Error> {
             match self.value {
                 Some(value) => seed.deserialize(value),
                 None => Err(de::Error::custom("expected newtype variant")),

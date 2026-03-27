@@ -281,11 +281,7 @@ impl<'o> ser::Serializer for Serializer<'o> {
         })
     }
 
-    fn serialize_struct(
-        self,
-        _name: &'static str,
-        len: usize,
-    ) -> Result<SerializeMap<'o>, Error> {
+    fn serialize_struct(self, _name: &'static str, len: usize) -> Result<SerializeMap<'o>, Error> {
         self.serialize_map(Some(len))
     }
 
@@ -435,7 +431,9 @@ impl<'o> ser::SerializeMap for SerializeMap<'o> {
         self.output.push('\n');
         self.output.push_str(&get_indent(self.level + 1));
         let mut key_str = String::new();
-        key.serialize(MapKeySerializer { output: &mut key_str })?;
+        key.serialize(MapKeySerializer {
+            output: &mut key_str,
+        })?;
         self.output.push_str(&stringify_key(&key_str));
         self.output.push_str(": ");
         Ok(())
@@ -630,9 +628,7 @@ impl<'o> ser::Serializer for MapKeySerializer<'o> {
         _variant: &'static str,
         _value: &T,
     ) -> Result<(), Error> {
-        Err(ser::Error::custom(
-            "newtype variant keys are not supported",
-        ))
+        Err(ser::Error::custom("newtype variant keys are not supported"))
     }
 
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Error> {

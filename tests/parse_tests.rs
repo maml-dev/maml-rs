@@ -176,7 +176,10 @@ fn stringify_basic() {
     assert_eq!(stringify(&Value::Int(42)).unwrap(), "42");
     assert_eq!(stringify(&Value::Float(3.15)).unwrap(), "3.15");
     assert_eq!(stringify(&Value::Float(-0.0)).unwrap(), "-0");
-    assert_eq!(stringify(&Value::String("hello".into())).unwrap(), "\"hello\"");
+    assert_eq!(
+        stringify(&Value::String("hello".into())).unwrap(),
+        "\"hello\""
+    );
     assert_eq!(stringify(&Value::Array(vec![])).unwrap(), "[]");
     assert_eq!(stringify(&Value::Object(vec![])).unwrap(), "{}");
 }
@@ -193,7 +196,10 @@ fn stringify_object() {
         ("foo".into(), Value::String("foo".into())),
         ("bar".into(), Value::String("bar".into())),
     ]);
-    assert_eq!(stringify(&val).unwrap(), "{\n  foo: \"foo\"\n  bar: \"bar\"\n}");
+    assert_eq!(
+        stringify(&val).unwrap(),
+        "{\n  foo: \"foo\"\n  bar: \"bar\"\n}"
+    );
 }
 
 #[test]
@@ -205,7 +211,10 @@ fn stringify_quoted_keys() {
 #[test]
 fn stringify_escapes() {
     let val = Value::String("line1\nline2\ttab\\back\"quote".into());
-    assert_eq!(stringify(&val).unwrap(), "\"line1\\nline2\\ttab\\\\back\\\"quote\"");
+    assert_eq!(
+        stringify(&val).unwrap(),
+        "\"line1\\nline2\\ttab\\\\back\\\"quote\""
+    );
 }
 
 #[test]
