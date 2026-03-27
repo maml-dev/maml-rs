@@ -144,7 +144,7 @@ fn stringify_roundtrip() {
             Ok(v) => v,
             Err(_) => continue,
         };
-        let serialized = stringify(&parsed);
+        let serialized = stringify(&parsed).unwrap();
         let reparsed = parse(&serialized).unwrap_or_else(|e| {
             panic!("Roundtrip failed for '{name}':\n  serialized: {serialized:?}\n  error: {e}");
         });
@@ -170,21 +170,21 @@ fn stringify_roundtrip() {
 
 #[test]
 fn stringify_basic() {
-    assert_eq!(stringify(&Value::Null), "null");
-    assert_eq!(stringify(&Value::Bool(true)), "true");
-    assert_eq!(stringify(&Value::Bool(false)), "false");
-    assert_eq!(stringify(&Value::Int(42)), "42");
-    assert_eq!(stringify(&Value::Float(3.15)), "3.15");
-    assert_eq!(stringify(&Value::Float(-0.0)), "-0");
-    assert_eq!(stringify(&Value::String("hello".into())), "\"hello\"");
-    assert_eq!(stringify(&Value::Array(vec![])), "[]");
-    assert_eq!(stringify(&Value::Object(vec![])), "{}");
+    assert_eq!(stringify(&Value::Null).unwrap(), "null");
+    assert_eq!(stringify(&Value::Bool(true)).unwrap(), "true");
+    assert_eq!(stringify(&Value::Bool(false)).unwrap(), "false");
+    assert_eq!(stringify(&Value::Int(42)).unwrap(), "42");
+    assert_eq!(stringify(&Value::Float(3.15)).unwrap(), "3.15");
+    assert_eq!(stringify(&Value::Float(-0.0)).unwrap(), "-0");
+    assert_eq!(stringify(&Value::String("hello".into())).unwrap(), "\"hello\"");
+    assert_eq!(stringify(&Value::Array(vec![])).unwrap(), "[]");
+    assert_eq!(stringify(&Value::Object(vec![])).unwrap(), "{}");
 }
 
 #[test]
 fn stringify_array() {
     let val = Value::Array(vec![Value::Int(1), Value::Int(2), Value::Int(3)]);
-    assert_eq!(stringify(&val), "[\n  1\n  2\n  3\n]");
+    assert_eq!(stringify(&val).unwrap(), "[\n  1\n  2\n  3\n]");
 }
 
 #[test]
@@ -193,19 +193,19 @@ fn stringify_object() {
         ("foo".into(), Value::String("foo".into())),
         ("bar".into(), Value::String("bar".into())),
     ]);
-    assert_eq!(stringify(&val), "{\n  foo: \"foo\"\n  bar: \"bar\"\n}");
+    assert_eq!(stringify(&val).unwrap(), "{\n  foo: \"foo\"\n  bar: \"bar\"\n}");
 }
 
 #[test]
 fn stringify_quoted_keys() {
     let val = Value::Object(vec![("foo bar".into(), Value::String("value".into()))]);
-    assert_eq!(stringify(&val), "{\n  \"foo bar\": \"value\"\n}");
+    assert_eq!(stringify(&val).unwrap(), "{\n  \"foo bar\": \"value\"\n}");
 }
 
 #[test]
 fn stringify_escapes() {
     let val = Value::String("line1\nline2\ttab\\back\"quote".into());
-    assert_eq!(stringify(&val), "\"line1\\nline2\\ttab\\\\back\\\"quote\"");
+    assert_eq!(stringify(&val).unwrap(), "\"line1\\nline2\\ttab\\\\back\\\"quote\"");
 }
 
 #[test]
@@ -368,13 +368,13 @@ fn string_allows_tab() {
 #[test]
 fn stringify_unicode_boundary_chars_pass_through() {
     let d7ff = Value::String("\u{D7FF}".into());
-    assert_eq!(stringify(&d7ff), format!("\"\u{D7FF}\""));
+    assert_eq!(stringify(&d7ff).unwrap(), format!("\"\u{D7FF}\""));
     let e000 = Value::String("\u{E000}".into());
-    assert_eq!(stringify(&e000), format!("\"\u{E000}\""));
+    assert_eq!(stringify(&e000).unwrap(), format!("\"\u{E000}\""));
     let sup = Value::String("\u{10000}".into());
-    assert_eq!(stringify(&sup), format!("\"\u{10000}\""));
+    assert_eq!(stringify(&sup).unwrap(), format!("\"\u{10000}\""));
     let max = Value::String("\u{10FFFF}".into());
-    assert_eq!(stringify(&max), format!("\"\u{10FFFF}\""));
+    assert_eq!(stringify(&max).unwrap(), format!("\"\u{10FFFF}\""));
 }
 
 #[test]
@@ -390,7 +390,7 @@ fn stringify_control_chars_0x01_to_0x1f_except_tab_escaped() {
             continue;
         } // CR uses \r
         let val = Value::String(String::from(char::from(code)));
-        let result = stringify(&val);
+        let result = stringify(&val).unwrap();
         let expected = format!("\"\\u{{{:X}}}\"", code);
         assert_eq!(
             result, expected,

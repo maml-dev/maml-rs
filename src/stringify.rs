@@ -1,32 +1,36 @@
+use crate::error::Error;
 use crate::value::Value;
 
-pub fn stringify(value: &Value) -> String {
+pub fn stringify(value: &Value) -> Result<String, Error> {
     do_stringify(value, 0)
 }
 
-fn do_stringify(value: &Value, level: usize) -> String {
+fn do_stringify(value: &Value, level: usize) -> Result<String, Error> {
     match value {
-        Value::Null => "null".to_string(),
-        Value::Bool(b) => b.to_string(),
-        Value::Int(n) => n.to_string(),
+        Value::Null => Ok("null".to_string()),
+        Value::Bool(b) => Ok(b.to_string()),
+        Value::Int(n) => Ok(n.to_string()),
         Value::Float(n) => {
+            if !n.is_finite() {
+                return Err(Error::new("cannot serialize non-finite float"));
+            }
             if *n == 0.0 && n.is_sign_negative() {
-                "-0".to_string()
+                Ok("-0".to_string())
             } else {
                 let s = n.to_string();
                 // Ensure floats always have a decimal point or exponent
                 // so they re-parse as floats, not integers
                 if s.contains('.') || s.contains('e') || s.contains('E') {
-                    s
+                    Ok(s)
                 } else {
-                    format!("{s}.0")
+                    Ok(format!("{s}.0"))
                 }
             }
         }
-        Value::String(s) => quote_string(s),
+        Value::String(s) => Ok(quote_string(s)),
         Value::Array(arr) => {
             if arr.is_empty() {
-                return "[]".to_string();
+                return Ok("[]".to_string());
             }
             let child_indent = get_indent(level + 1);
             let parent_indent = get_indent(level);
@@ -36,16 +40,16 @@ fn do_stringify(value: &Value, level: usize) -> String {
                     out.push('\n');
                 }
                 out.push_str(&child_indent);
-                out.push_str(&do_stringify(item, level + 1));
+                out.push_str(&do_stringify(item, level + 1)?);
             }
             out.push('\n');
             out.push_str(&parent_indent);
             out.push(']');
-            out
+            Ok(out)
         }
         Value::Object(pairs) => {
             if pairs.is_empty() {
-                return "{}".to_string();
+                return Ok("{}".to_string());
             }
             let child_indent = get_indent(level + 1);
             let parent_indent = get_indent(level);
@@ -57,12 +61,12 @@ fn do_stringify(value: &Value, level: usize) -> String {
                 out.push_str(&child_indent);
                 out.push_str(&stringify_key(key));
                 out.push_str(": ");
-                out.push_str(&do_stringify(val, level + 1));
+                out.push_str(&do_stringify(val, level + 1)?);
             }
             out.push('\n');
             out.push_str(&parent_indent);
             out.push('}');
-            out
+            Ok(out)
         }
     }
 }

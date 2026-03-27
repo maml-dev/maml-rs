@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::de::Error;
+use crate::error::Error;
 use crate::value::Value;
 
 struct Parser<'a> {
@@ -438,9 +438,23 @@ impl<'a> Parser<'a> {
 
     fn skip_whitespace(&mut self) -> bool {
         let mut has_newline = false;
-        while is_whitespace(self.ch) {
-            has_newline |= self.ch == b'\n';
-            self.next();
+        loop {
+            match self.ch {
+                b' ' | b'\t' => self.next(),
+                b'\n' => {
+                    has_newline = true;
+                    self.next();
+                }
+                b'\r' => {
+                    // Only consume CR if followed by LF (CRLF newline)
+                    if self.pos < self.bytes.len() && self.bytes[self.pos] == b'\n' {
+                        self.next(); // consume CR, now at LF
+                    } else {
+                        break; // bare CR is not valid whitespace
+                    }
+                }
+                _ => break,
+            }
         }
         let has_newline_after_comment = self.skip_comment();
         has_newline || has_newline_after_comment

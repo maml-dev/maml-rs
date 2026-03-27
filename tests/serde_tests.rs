@@ -560,7 +560,7 @@ fn ser_value_matches_stringify() {
 
     for value in &cases {
         let ser_result = to_string(value).unwrap();
-        let stringify_result = stringify(value);
+        let stringify_result = stringify(value).unwrap();
         assert_eq!(
             ser_result, stringify_result,
             "Mismatch for {:?}",
@@ -707,19 +707,16 @@ fn de_error_message() {
 }
 
 #[test]
-fn ser_error_display() {
-    let err = maml::ser::Error::custom("test error");
+fn error_display() {
+    let err = maml::Error::new("test error");
     assert_eq!(err.to_string(), "test error");
 }
 
 #[test]
-fn ser_error_message() {
-    let err = maml::ser::Error::custom("test error");
+fn error_message() {
+    let err = maml::Error::new("test error");
     assert_eq!(err.message(), "test error");
 }
-
-// Test that ser::Error implements serde::ser::Error
-use serde::ser::Error as _;
 
 #[test]
 fn ser_variant_unit_variant_error() {
@@ -1047,7 +1044,7 @@ fn ser_empty_struct_variant() {
 #[test]
 fn de_value_from_unit_deserializer() {
     use serde::de::IntoDeserializer;
-    let de: serde::de::value::UnitDeserializer<maml::de::Error> = ().into_deserializer();
+    let de: serde::de::value::UnitDeserializer<maml::Error> = ().into_deserializer();
     let val = Value::deserialize(de).unwrap();
     assert_eq!(val, Value::Null);
 }
@@ -1055,7 +1052,7 @@ fn de_value_from_unit_deserializer() {
 #[test]
 fn de_value_from_u64_deserializer() {
     use serde::de::IntoDeserializer;
-    let de: serde::de::value::U64Deserializer<maml::de::Error> = 42u64.into_deserializer();
+    let de: serde::de::value::U64Deserializer<maml::Error> = 42u64.into_deserializer();
     let val = Value::deserialize(de).unwrap();
     assert_eq!(val, Value::Int(42));
 }
@@ -1063,7 +1060,7 @@ fn de_value_from_u64_deserializer() {
 #[test]
 fn de_value_from_u64_out_of_range() {
     use serde::de::IntoDeserializer;
-    let de: serde::de::value::U64Deserializer<maml::de::Error> = u64::MAX.into_deserializer();
+    let de: serde::de::value::U64Deserializer<maml::Error> = u64::MAX.into_deserializer();
     let err = Value::deserialize(de).unwrap_err();
     assert!(!err.to_string().is_empty());
 }
@@ -1071,7 +1068,7 @@ fn de_value_from_u64_out_of_range() {
 #[test]
 fn de_value_from_str_deserializer() {
     use serde::de::IntoDeserializer;
-    let de: serde::de::value::StrDeserializer<'_, maml::de::Error> = "hello".into_deserializer();
+    let de: serde::de::value::StrDeserializer<'_, maml::Error> = "hello".into_deserializer();
     let val = Value::deserialize(de).unwrap();
     assert_eq!(val, Value::String("hello".into()));
 }
@@ -1079,7 +1076,7 @@ fn de_value_from_str_deserializer() {
 #[test]
 fn de_value_from_string_deserializer() {
     use serde::de::IntoDeserializer;
-    let de: serde::de::value::StringDeserializer<maml::de::Error> =
+    let de: serde::de::value::StringDeserializer<maml::Error> =
         "world".to_string().into_deserializer();
     let val = Value::deserialize(de).unwrap();
     assert_eq!(val, Value::String("world".into()));
@@ -1088,7 +1085,7 @@ fn de_value_from_string_deserializer() {
 #[test]
 fn de_value_expecting_triggered() {
     // Use a bytes deserializer to trigger the error path which calls expecting()
-    let de = serde::de::value::BorrowedBytesDeserializer::<'_, maml::de::Error>::new(b"hello");
+    let de = serde::de::value::BorrowedBytesDeserializer::<'_, maml::Error>::new(b"hello");
     let err = Value::deserialize(de).unwrap_err();
     assert!(err.to_string().contains("MAML value"));
 }
@@ -1096,7 +1093,7 @@ fn de_value_expecting_triggered() {
 // Custom mini-deserializer for visit_none
 struct NoneDeserializer;
 impl<'de> serde::Deserializer<'de> for NoneDeserializer {
-    type Error = maml::de::Error;
+    type Error = maml::Error;
     fn deserialize_any<V: serde::de::Visitor<'de>>(
         self,
         visitor: V,
@@ -1119,12 +1116,12 @@ fn de_value_from_none_deserializer() {
 // Custom mini-deserializer for visit_some
 struct SomeDeserializer;
 impl<'de> serde::Deserializer<'de> for SomeDeserializer {
-    type Error = maml::de::Error;
+    type Error = maml::Error;
     fn deserialize_any<V: serde::de::Visitor<'de>>(
         self,
         visitor: V,
     ) -> Result<V::Value, Self::Error> {
-        visitor.visit_some(serde::de::value::I64Deserializer::<maml::de::Error>::new(42))
+        visitor.visit_some(serde::de::value::I64Deserializer::<maml::Error>::new(42))
     }
     serde::forward_to_deserialize_any! {
         bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str string
@@ -1181,7 +1178,7 @@ fn de_value_null_explicit() {
 
 struct FailingSeqDeserializer;
 impl<'de> serde::Deserializer<'de> for FailingSeqDeserializer {
-    type Error = maml::de::Error;
+    type Error = maml::Error;
     fn deserialize_any<V: serde::de::Visitor<'de>>(
         self,
         visitor: V,
@@ -1197,7 +1194,7 @@ impl<'de> serde::Deserializer<'de> for FailingSeqDeserializer {
 
 struct FailingSeqAccess;
 impl<'de> serde::de::SeqAccess<'de> for FailingSeqAccess {
-    type Error = maml::de::Error;
+    type Error = maml::Error;
     fn next_element_seed<T: serde::de::DeserializeSeed<'de>>(
         &mut self,
         _seed: T,
@@ -1214,7 +1211,7 @@ fn de_value_visit_seq_error() {
 
 struct FailingMapDeserializer;
 impl<'de> serde::Deserializer<'de> for FailingMapDeserializer {
-    type Error = maml::de::Error;
+    type Error = maml::Error;
     fn deserialize_any<V: serde::de::Visitor<'de>>(
         self,
         visitor: V,
@@ -1230,7 +1227,7 @@ impl<'de> serde::Deserializer<'de> for FailingMapDeserializer {
 
 struct FailingMapAccess;
 impl<'de> serde::de::MapAccess<'de> for FailingMapAccess {
-    type Error = maml::de::Error;
+    type Error = maml::Error;
     fn next_key_seed<K: serde::de::DeserializeSeed<'de>>(
         &mut self,
         _seed: K,

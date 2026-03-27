@@ -1,35 +1,7 @@
-use std::fmt;
-
 use serde::ser::{self, Serialize};
 
+use crate::error::Error;
 use crate::stringify::{get_indent, quote_string, stringify_key};
-
-#[derive(Debug, Clone)]
-pub struct Error {
-    message: String,
-}
-
-impl Error {
-    pub fn message(&self) -> &str {
-        &self.message
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl std::error::Error for Error {}
-
-impl ser::Error for Error {
-    fn custom<T: fmt::Display>(msg: T) -> Self {
-        Self {
-            message: msg.to_string(),
-        }
-    }
-}
 
 pub fn to_string<T: Serialize>(value: &T) -> Result<String, Error> {
     let mut output = String::new();
@@ -105,6 +77,9 @@ impl<'o> ser::Serializer for Serializer<'o> {
     }
 
     fn serialize_f64(self, v: f64) -> Result<(), Error> {
+        if !v.is_finite() {
+            return Err(ser::Error::custom("cannot serialize non-finite float"));
+        }
         if v == 0.0 && v.is_sign_negative() {
             self.output.push_str("-0");
         } else {
