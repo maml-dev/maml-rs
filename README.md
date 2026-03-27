@@ -3,10 +3,6 @@
 A Rust implementation of the [MAML](https://maml.dev) data format — a minimal, human-readable alternative to JSON, YAML,
 and TOML.
 
-- Spec-accurate parser and pretty serializer
-- Zero dependencies
-- Well-tested: 90+ parse tests, 50+ error tests, roundtrip verification
-
 ## Installation
 
 ```toml

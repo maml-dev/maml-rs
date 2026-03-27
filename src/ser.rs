@@ -92,8 +92,10 @@ impl<'o> ser::Serializer for Serializer<'o> {
     }
 
     fn serialize_u64(self, v: u64) -> Result<(), Error> {
-        self.output.push_str(&v.to_string());
-        Ok(())
+        if v > i64::MAX as u64 {
+            return Err(ser::Error::custom("u64 value exceeds MAML integer range"));
+        }
+        self.serialize_i64(v as i64)
     }
 
     fn serialize_f32(self, v: f32) -> Result<(), Error> {
@@ -566,6 +568,9 @@ impl<'o> ser::Serializer for MapKeySerializer<'o> {
     }
 
     fn serialize_u64(self, v: u64) -> Result<(), Error> {
+        if v > i64::MAX as u64 {
+            return Err(ser::Error::custom("u64 value exceeds MAML integer range"));
+        }
         self.output.push_str(&v.to_string());
         Ok(())
     }

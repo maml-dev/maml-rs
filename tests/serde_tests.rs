@@ -306,6 +306,20 @@ fn ser_non_finite_float_error() {
 }
 
 #[test]
+fn ser_u64_in_range() {
+    assert_eq!(
+        to_string(&(i64::MAX as u64)).unwrap(),
+        "9223372036854775807"
+    );
+}
+
+#[test]
+fn ser_u64_out_of_range() {
+    assert!(to_string(&u64::MAX).is_err());
+    assert!(to_string(&(i64::MAX as u64 + 1)).is_err());
+}
+
+#[test]
 fn ser_string() {
     assert_eq!(to_string(&"hello").unwrap(), "\"hello\"");
     assert_eq!(to_string(&"line\nnew").unwrap(), "\"line\\nnew\"");
