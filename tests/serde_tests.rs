@@ -721,6 +721,7 @@ fn error_message() {
 #[test]
 fn ser_variant_unit_variant_error() {
     #[derive(Deserialize, Debug)]
+    #[allow(dead_code)]
     enum E {
         A,
     }
@@ -732,6 +733,7 @@ fn ser_variant_unit_variant_error() {
 #[test]
 fn de_variant_missing_newtype() {
     #[derive(Deserialize, Debug)]
+    #[allow(dead_code)]
     enum E {
         A(i64),
     }
@@ -743,6 +745,7 @@ fn de_variant_missing_newtype() {
 #[test]
 fn de_variant_tuple_not_array() {
     #[derive(Deserialize, Debug)]
+    #[allow(dead_code)]
     enum E {
         A(i64, i64),
     }
@@ -754,6 +757,7 @@ fn de_variant_tuple_not_array() {
 #[test]
 fn de_variant_struct_not_object() {
     #[derive(Deserialize, Debug)]
+    #[allow(dead_code)]
     enum E {
         A { x: i64 },
     }

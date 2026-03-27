@@ -1,6 +1,27 @@
 use crate::error::Error;
 use crate::value::Value;
 
+/// Serializes a [`Value`] into a pretty-printed MAML string.
+///
+/// The output uses 2-space indentation and newline-separated entries.
+///
+/// # Errors
+///
+/// Returns an [`Error`] if the value contains a non-finite float (`NaN`, `Infinity`).
+///
+/// # Examples
+///
+/// ```
+/// use maml::{stringify, Value};
+///
+/// let value = Value::Object(vec![
+///     ("name".into(), Value::String("maml".into())),
+///     ("version".into(), Value::Int(1)),
+/// ]);
+///
+/// let output = stringify(&value).unwrap();
+/// assert_eq!(output, "{\n  name: \"maml\"\n  version: 1\n}");
+/// ```
 pub fn stringify(value: &Value) -> Result<String, Error> {
     do_stringify(value, 0)
 }

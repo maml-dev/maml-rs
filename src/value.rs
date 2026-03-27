@@ -1,13 +1,51 @@
 use std::ops::Index;
 
+/// Represents a MAML value.
+///
+/// This is the core type for working with MAML data. It supports all seven
+/// MAML types: null, booleans, integers, floats, strings, arrays, and objects.
+///
+/// Objects preserve insertion order using `Vec<(String, Value)>`.
+///
+/// # Indexing
+///
+/// `Value` supports indexing with `&str` for objects and `usize` for arrays:
+///
+/// ```
+/// use maml::{parse, Value};
+///
+/// let v = parse(r#"{items: [1, 2, 3]}"#).unwrap();
+/// assert_eq!(v["items"][0], Value::Int(1));
+/// ```
+///
+/// # Conversions
+///
+/// Common types can be converted into `Value` using `From`:
+///
+/// ```
+/// use maml::Value;
+///
+/// let v: Value = "hello".into();
+/// assert_eq!(v.as_str(), Some("hello"));
+///
+/// let v: Value = 42i64.into();
+/// assert_eq!(v.as_i64(), Some(42));
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
+    /// Represents a MAML `null` value.
     Null,
+    /// Represents a MAML boolean (`true` or `false`).
     Bool(bool),
+    /// Represents a MAML integer (64-bit signed).
     Int(i64),
+    /// Represents a MAML float (64-bit IEEE 754).
     Float(f64),
+    /// Represents a MAML string (quoted or raw).
     String(String),
+    /// Represents a MAML array.
     Array(Vec<Value>),
+    /// Represents a MAML object with ordered key-value pairs.
     Object(Vec<(String, Value)>),
 }
 
@@ -16,10 +54,12 @@ pub enum Value {
 // ---------------------------------------------------------------------------
 
 impl Value {
+    /// Returns `true` if the value is `Null`.
     pub fn is_null(&self) -> bool {
         matches!(self, Value::Null)
     }
 
+    /// If the value is a `Bool`, returns the inner value.
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             Value::Bool(b) => Some(*b),
@@ -27,6 +67,7 @@ impl Value {
         }
     }
 
+    /// If the value is an `Int`, returns the inner value.
     pub fn as_i64(&self) -> Option<i64> {
         match self {
             Value::Int(n) => Some(*n),
@@ -34,6 +75,7 @@ impl Value {
         }
     }
 
+    /// If the value is a `Float`, returns the inner value.
     pub fn as_f64(&self) -> Option<f64> {
         match self {
             Value::Float(n) => Some(*n),
@@ -41,6 +83,7 @@ impl Value {
         }
     }
 
+    /// If the value is a `String`, returns a reference to the inner string.
     pub fn as_str(&self) -> Option<&str> {
         match self {
             Value::String(s) => Some(s),
@@ -48,6 +91,7 @@ impl Value {
         }
     }
 
+    /// If the value is an `Array`, returns a reference to the inner slice.
     pub fn as_array(&self) -> Option<&[Value]> {
         match self {
             Value::Array(a) => Some(a),
@@ -55,6 +99,7 @@ impl Value {
         }
     }
 
+    /// If the value is an `Object`, returns a reference to the key-value pairs.
     pub fn as_object(&self) -> Option<&[(String, Value)]> {
         match self {
             Value::Object(o) => Some(o),
@@ -62,6 +107,8 @@ impl Value {
         }
     }
 
+    /// Looks up a value by key in an `Object`. Returns `None` if the value is
+    /// not an object or the key is missing.
     pub fn get(&self, key: &str) -> Option<&Value> {
         match self {
             Value::Object(pairs) => pairs.iter().find(|(k, _)| k == key).map(|(_, v)| v),

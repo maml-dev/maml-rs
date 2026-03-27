@@ -3,6 +3,30 @@ use serde::ser::{self, Serialize};
 use crate::error::Error;
 use crate::stringify::{get_indent, quote_string, stringify_key};
 
+/// Serializes any type that implements [`Serialize`] into a MAML string.
+///
+/// The output uses 2-space indentation and newline-separated entries.
+///
+/// # Errors
+///
+/// Returns an [`Error`] if the value contains non-finite floats or
+/// unsupported map key types.
+///
+/// # Examples
+///
+/// ```
+/// use serde::Serialize;
+///
+/// #[derive(Serialize)]
+/// struct Config {
+///     name: String,
+///     port: u16,
+/// }
+///
+/// let config = Config { name: "app".into(), port: 8080 };
+/// let output = maml::to_string(&config).unwrap();
+/// assert_eq!(output, "{\n  name: \"app\"\n  port: 8080\n}");
+/// ```
 pub fn to_string<T: Serialize>(value: &T) -> Result<String, Error> {
     let mut output = String::new();
     let serializer = Serializer {

@@ -12,6 +12,22 @@ struct Parser<'a> {
     done: bool,
 }
 
+/// Parses a MAML string into a [`Value`].
+///
+/// # Errors
+///
+/// Returns an [`Error`] if the input is not valid MAML. The error includes
+/// the line number and a snippet pointing to the problem.
+///
+/// # Examples
+///
+/// ```
+/// use maml::{parse, Value};
+///
+/// let value = parse(r#"{name: "maml", version: 1}"#).unwrap();
+/// assert_eq!(value["name"], Value::String("maml".into()));
+/// assert_eq!(value["version"], Value::Int(1));
+/// ```
 pub fn parse(source: &str) -> Result<Value, Error> {
     let mut p = Parser::new(source);
     let value = p.parse_value()?;

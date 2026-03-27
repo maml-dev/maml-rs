@@ -57,7 +57,7 @@ let value = Value::Object(vec![
     ("enabled".into(), Value::Bool(true)),
 ]);
 
-let output = stringify(&value);
+let output = stringify(&value).unwrap();
 // {
 //   name: "maml"
 //   version: 1
