@@ -67,14 +67,14 @@ fn do_stringify(value: &Value, level: usize) -> String {
     }
 }
 
-fn is_identifier_key(key: &str) -> bool {
+pub(crate) fn is_identifier_key(key: &str) -> bool {
     !key.is_empty()
         && key
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
 }
 
-fn stringify_key(key: &str) -> String {
+pub(crate) fn stringify_key(key: &str) -> String {
     if is_identifier_key(key) {
         key.to_string()
     } else {
@@ -82,7 +82,7 @@ fn stringify_key(key: &str) -> String {
     }
 }
 
-fn quote_string(s: &str) -> String {
+pub(crate) fn quote_string(s: &str) -> String {
     let mut out = String::with_capacity(s.len() + 2);
     out.push('"');
     for c in s.chars() {
@@ -102,6 +102,6 @@ fn quote_string(s: &str) -> String {
     out
 }
 
-fn get_indent(level: usize) -> String {
+pub(crate) fn get_indent(level: usize) -> String {
     " ".repeat(2 * level)
 }

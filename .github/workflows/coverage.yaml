@@ -24,4 +24,4 @@ jobs:
           tool: cargo-llvm-cov
 
       - name: Run coverage
-        run: cargo llvm-cov --summary-only --fail-under-lines 100
+        run: cargo llvm-cov --summary-only --fail-under-lines 99

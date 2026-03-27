@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::error::Error;
+use crate::de::Error;
 use crate::value::Value;
 
 struct Parser<'a> {
@@ -498,7 +498,7 @@ impl<'a> Parser<'a> {
         let pointer = format!("    {dots}^");
         let formatted = format!("{message} on line {line_number}.\n\n{snippet}\n{pointer}");
 
-        Error::new(formatted, line_number)
+        Error::parse_error(formatted, line_number)
     }
 }
 

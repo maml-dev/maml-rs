@@ -174,7 +174,7 @@ fn stringify_basic() {
     assert_eq!(stringify(&Value::Bool(true)), "true");
     assert_eq!(stringify(&Value::Bool(false)), "false");
     assert_eq!(stringify(&Value::Int(42)), "42");
-    assert_eq!(stringify(&Value::Float(3.14)), "3.14");
+    assert_eq!(stringify(&Value::Float(3.15)), "3.15");
     assert_eq!(stringify(&Value::Float(-0.0)), "-0");
     assert_eq!(stringify(&Value::String("hello".into())), "\"hello\"");
     assert_eq!(stringify(&Value::Array(vec![])), "[]");
@@ -252,7 +252,7 @@ fn integer_overflow() {
 
 #[test]
 fn value_accessors() {
-    let obj = parse("{a: 1, b: [true, null], c: 3.14, d: \"hello\"}").unwrap();
+    let obj = parse("{a: 1, b: [true, null], c: 3.15, d: \"hello\"}").unwrap();
 
     // Index access
     assert_eq!(obj["a"], Value::Int(1));
@@ -277,7 +277,7 @@ fn value_accessors() {
     assert_eq!(obj["d"].as_i64(), None);
 
     // as_f64
-    assert_eq!(obj["c"].as_f64(), Some(3.14));
+    assert_eq!(obj["c"].as_f64(), Some(3.15));
     assert_eq!(obj["a"].as_f64(), None);
 
     // as_str
@@ -297,7 +297,7 @@ fn value_accessors() {
 fn value_from_impls() {
     let _: Value = true.into();
     let _: Value = 42i64.into();
-    let _: Value = 3.14f64.into();
+    let _: Value = 3.15f64.into();
     let _: Value = "hello".into();
     let _: Value = String::from("world").into();
     let _: Value = vec![Value::Null].into();
@@ -320,7 +320,7 @@ fn index_str_on_missing_key() {
 #[test]
 fn error_line_number() {
     let err = parse("{\n  a: 1\n  a: 2\n}").unwrap_err();
-    assert!(err.line() > 0);
+    assert!(err.line().unwrap() > 0);
     let msg = err.to_string();
     assert!(msg.contains("Duplicate key"));
 }
